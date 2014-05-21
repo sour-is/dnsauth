@@ -1,8 +1,8 @@
-package main
+package auth
 
 import "strconv"
 
-func GetKey(tag, key string) string {
+func TXTValue(tag, key string) string {
 	for tag != "" {
 		// skip leading space
 		i := 0

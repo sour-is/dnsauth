@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"encoding/base64"
 	"github.com/docopt/docopt.go"
+	"github.com/sour-is/dnsauth/auth"
 	"os"
     "io/ioutil"
+    "strings"
 	"log"
 	"net"
 )
@@ -14,7 +17,8 @@ var APP_USAGE string = `DNE-EC Authenticate
 Copyright (c) 2014, Jon Lundy <jon@xuu.cc> 1NvmHfSjPq1UB9scXFhYDLkihnu9nkQ8xg
 
 Usage:
-  dnsauth [-v] sign   USER PASS
+  dnsauth [-v] gentxt USER PASS
+  dnsauth [-v] sign   USER PASS [NONCE]
   dnsauth [-v] verify USER SIG [PUB]`
 
 var args map[string]interface{}
@@ -42,19 +46,34 @@ func init() {
 
 func main() {
 
-	if args["sign"] == true {
+	switch {
+	case args["gentxt"] == true:
+		user := args["USER"].(string)
+		pass := args["PASS"].(string)
+		
+		priv, pub := auth.GenTXT(user, pass)
+
+		fmt.Printf("Private Key: %x\n", priv)
+		fmt.Printf("%s. IN TXT \"algo:ecdsa curve:secp256k1 pubkey:%s\"\n", user, encode(pub))
+
+	case args["sign"] == true:
 
 		user := args["USER"].(string)
 		pass := args["PASS"].(string)
+		nonce := ""
 
-		Priv, Pub, Sig := Sign(user, pass)
+		if args["NONCE"] != nil {
+			nonce = args["NONCE"].(string)
+		}
 
-		INFO.Printf("Private Key: %s\n", Encode(Priv))
-		INFO.Printf("Public Key:  %s\n", Encode(Pub))
+		Priv, Pub, Sig := auth.Sign(user, pass, nonce)
 
-		fmt.Printf("Sign:   %s\n", Encode(Sig))
+		INFO.Printf("Private Key: %s\n", encode(Priv))
+		INFO.Printf("Public Key: %s\n", encode(Pub))
 
-	} else if args["verify"] == true {
+		fmt.Printf("sig=%s\n", encode(Sig))
+
+	case args["verify"] == true:
 
 		user := args["USER"].(string)
 		sig := args["SIG"].(string)
@@ -69,7 +88,7 @@ func main() {
 
 			INFO.Println("Received TXT:", txt)
 			for _, t := range txt {
-				pub = GetKey(t, "pubkey")
+				pub = auth.TXTValue(t, "pubkey")
 
 				if pub != "" {
 					break
@@ -83,13 +102,26 @@ func main() {
 			return
 		}
 
-		p, _ := Decode(pub)
-		s, _ := Decode(sig)
+		p := decode(pub)
+		s := decode(sig)
 		INFO.Printf("User:   %s\n", user)
 		INFO.Printf("PubKey: %x\n", p)
 		INFO.Printf("Sig:    %x\n", s)
 		
-		v := Verify(p, s)
+		v := auth.Verify(p, s)
 		fmt.Println("Verify:", v)
 	}
+}
+
+func encode(in []byte) (out string) {
+	out = base64.URLEncoding.EncodeToString(in)
+	strings.TrimRight(out, "+")
+	return
+}
+func decode(in string) (out []byte) {
+	if m := len(in) % 4; m != 0 {
+		in += strings.Repeat("=", 4-m)
+	}
+	out, _ = base64.URLEncoding.DecodeString(in)
+	return
 }
