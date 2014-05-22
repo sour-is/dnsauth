@@ -2,14 +2,13 @@ package main
 
 import (
 	"fmt"
-	"encoding/base64"
 	"github.com/docopt/docopt.go"
 	"github.com/sour-is/dnsauth/auth"
-	"os"
-    "io/ioutil"
-    "strings"
+	"github.com/sour-is/koblitz/kelliptic"
+	"io/ioutil"
 	"log"
 	"net"
+	"os"
 )
 
 var APP_NAME string = "DNS-EC Authenticate"
@@ -24,8 +23,8 @@ Usage:
 var args map[string]interface{}
 
 var (
-    INFO    *log.Logger
-    ERROR   *log.Logger
+	INFO  *log.Logger
+	ERROR *log.Logger
 )
 
 func init() {
@@ -45,40 +44,48 @@ func init() {
 }
 
 func main() {
+	s256 := kelliptic.S256()
 
 	switch {
 	case args["gentxt"] == true:
 		user := args["USER"].(string)
-		pass := args["PASS"].(string)
-		
-		priv, pub := auth.GenTXT(user, pass)
+		INFO.Printf("User:   %s\n", user)
 
-		fmt.Printf("Private Key: %x\n", priv)
-		fmt.Printf("%s. IN TXT \"algo:ecdsa curve:secp256k1 pubkey:%s\"\n", user, encode(pub))
+		pass := args["PASS"].(string)
+		sha := auth.Hash256([]byte(pass))
+		INFO.Printf("Pass:   %x\n", auth.Encode(sha))
+
+		priv := new(auth.PrivateKey)
+		priv.Generate(s256, []byte(user), sha)
+
+		fmt.Printf("Private Key: %x\n", priv.Bytes())
+		fmt.Printf("%s. IN TXT \"algo:ecdsa curve:secp256k1 pubkey:%s\"\n", user, priv.Public())
 
 	case args["sign"] == true:
-
 		user := args["USER"].(string)
-		pass := args["PASS"].(string)
-		nonce := ""
+		INFO.Printf("User:   %s\n", user)
 
+		pass := args["PASS"].(string)
+		sha := auth.Hash256([]byte(pass))
+
+		nonce := ""
 		if args["NONCE"] != nil {
 			nonce = args["NONCE"].(string)
 		}
 
-		Priv, Pub, Sig := auth.Sign(user, pass, nonce)
+		priv := new(auth.PrivateKey)
+		priv.Generate(s256, []byte(user), sha)
+		INFO.Printf("Private Key: %s\n", priv)
+		INFO.Printf("Public Key: %s\n", priv.Public())
 
-		INFO.Printf("Private Key: %s\n", encode(Priv))
-		INFO.Printf("Public Key: %s\n", encode(Pub))
-
-		fmt.Printf("sig=%s\n", encode(Sig))
+		s, _ := auth.Sign(priv, nonce)
+		fmt.Printf("sig=%s\n", s.String())
 
 	case args["verify"] == true:
-
 		user := args["USER"].(string)
-		sig := args["SIG"].(string)
-		pub := ""
+		INFO.Printf("User:   %s\n", user)
 
+		pub := ""
 		if args["PUB"] != nil {
 			INFO.Println("PublicKey was provided.")
 			pub = args["PUB"].(string)
@@ -95,33 +102,22 @@ func main() {
 				}
 			}
 		}
-
 		if pub == "" {
 			ERROR.Println("No PublicKey Found!")
 			fmt.Println("Verify: err")
 			return
 		}
 
-		p := decode(pub)
-		s := decode(sig)
-		INFO.Printf("User:   %s\n", user)
-		INFO.Printf("PubKey: %x\n", p)
-		INFO.Printf("Sig:    %x\n", s)
-		
+		p := new(auth.PublicKey)
+		p.SetString(s256, pub)
+		INFO.Printf("PubKey: %x\n", p.Bytes())
+
+		sig := args["SIG"].(string)
+		s := new(auth.Signature)
+		s.SetString(sig)
+		INFO.Printf("Sig:    %x\n", s.Bytes())
+
 		v := auth.Verify(p, s)
 		fmt.Println("Verify:", v)
 	}
-}
-
-func encode(in []byte) (out string) {
-	out = base64.URLEncoding.EncodeToString(in)
-	strings.TrimRight(out, "+")
-	return
-}
-func decode(in string) (out []byte) {
-	if m := len(in) % 4; m != 0 {
-		in += strings.Repeat("=", 4-m)
-	}
-	out, _ = base64.URLEncoding.DecodeString(in)
-	return
 }

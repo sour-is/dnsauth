@@ -1,6 +1,11 @@
 package auth
 
-import "strconv"
+import (
+	"crypto/sha256"
+	"encoding/base64"
+	"strconv"
+	"strings"
+)
 
 func TXTValue(tag, key string) string {
 	for tag != "" {
@@ -61,4 +66,26 @@ func TXTValue(tag, key string) string {
 		}
 	}
 	return ""
+}
+
+func Encode(in []byte) (out string) {
+	out = base64.URLEncoding.EncodeToString(in)
+	out = strings.TrimRight(out, "=")
+	return
+}
+func Decode(in string) (out []byte) {
+	if m := len(in) % 4; m != 0 {
+		in += strings.Repeat("=", 4-m)
+	}
+	out, _ = base64.URLEncoding.DecodeString(in)
+	return
+}
+func Hash256(in []byte) []byte {
+	s1 := sha256.New()
+	s2 := sha256.New()
+
+	s1.Write(in)
+	s2.Write(s1.Sum(nil))
+
+	return s2.Sum(nil)
 }
