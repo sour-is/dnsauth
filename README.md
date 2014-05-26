@@ -68,7 +68,7 @@ The web interface can take the following as input in the post data:
 OK, so how does it work?
 -----------------------
 
-It works by using ECDSA! 
+It works by using [ECDSA](http://en.wikipedia.org/wiki/Elliptic_Curve_DSA)! 
 
 The private key is generated using the domain name and password. the following pseudo code will demonstrate. 
 
