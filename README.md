@@ -11,6 +11,7 @@ Install
 The package requires git and mecurial to be installed for go to fetch the dependancies. 
 
     $ mkdir workspace
+    $ cd workspace
     $ export GOPATH=`pwd`
     $ go get github.com/sour-is/dnsauth/dnsauth-cli
 
