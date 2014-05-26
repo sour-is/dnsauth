@@ -39,14 +39,14 @@ Sign a token
 Verify a token
 --------------
 
-    $ dnsauth-cli/dnsauth-cli verify dummy1.sour.is IHcCY83WQwkS5REJY04yG9OAogq0f2qwiJGYljWyJcKl11-WgqaSU7EO1i3n9axIF0foXPpUqAROsDE6QgfERmkl5q3h
+    $ bin/dnsauth-cli verify dummy1.sour.is IHcCY83WQwkS5REJY04yG9OAogq0f2qwiJGYljWyJcKl11-WgqaSU7EO1i3n9axIF0foXPpUqAROsDE6QgfERmkl5q3h
     
     Verify: true
 
 Using the web interface
 -----------------------
 
-    $ dnsauth-cli/dnsauth-cli -v web
+    $ bin/dnsauth-cli -v web
     INFO: 2014/05/26 12:28:47 web.go:17: Listen and Serve on port :8080 
     
     $ curl localhost:8080/auth/dummy1.sour.is -d sig=IHcCY83WQwkS5REJY04yG9OAogq0f2qwiJGYljWyJcKl11-WgqaSU7EO1i3n9axIF0foXPpUqAROsDE6QgfERmkl5q3h
