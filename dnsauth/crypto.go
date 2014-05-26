@@ -1,4 +1,4 @@
-package auth
+package dnsauth
 
 import (
 	"crypto/ecdsa"

@@ -1,4 +1,4 @@
-package auth
+package dnsauth
 
 import (
 	"code.google.com/p/go.crypto/scrypt"
