@@ -8,9 +8,13 @@ This project uses TXT records from DNS as a store for public keys which can then
 Install
 -------
 
+The package requires git and mecurial to be installed for go to fetch the dependancies. 
+
     $ mkdir workspace
     $ export GOPATH=`pwd`
     $ go get github.com/sour-is/dnsauth/dnsauth-cli
+
+The finished executable will be in the bin directory.
 
 
 Create a DNS entry
