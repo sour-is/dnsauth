@@ -99,7 +99,7 @@ First, is signing a random nonce and appending it to the end of the signature.
 
 Second, is verifying the signature.
   
-    verify(private, nonce, R, S)
+    verify(public, nonce, R, S)
     
     // if true  : authentication passes
     // if false : authentication failed
